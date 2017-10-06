@@ -1,5 +1,10 @@
 {
   "name": "purescript-pako",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jacereda/purescript-pako.git"
+  },
   "ignore": [
     "**/.*",
     "node_modules",
