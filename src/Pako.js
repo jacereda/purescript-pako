@@ -4,13 +4,13 @@ var pako = require('pako');
 exports.deflateImpl = function(options) {
   return function(bytes) {
     return function() {
-      return pako.deflate(bytes, options);
+      return pako.deflate(bytes, options).buffer;
     };
   };
 };
 
 exports.inflateImpl = function(bytes) {
   return function() {
-    return pako.inflate(bytes);
+    return pako.inflate(bytes).buffer;
   };
 };

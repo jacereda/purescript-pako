@@ -7,7 +7,7 @@ import Control.Monad.Eff.Exception (EXCEPTION, Error, try)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
-import Data.ArrayBuffer.Types (Uint8Array)
+import Data.ArrayBuffer.Types (ArrayBuffer)
 import Data.Char (fromCharCode)
 import Data.Either (Either)
 import Data.Enum (class Enum)
@@ -119,9 +119,9 @@ type Options = { level :: Level
                , strategy :: Strategy
                }
 
-foreign import deflateImpl :: forall e. Foreign -> Uint8Array -> Eff (exception :: EXCEPTION, pako :: PAKO | e) Uint8Array
+foreign import deflateImpl :: forall e. Foreign -> ArrayBuffer -> Eff (exception :: EXCEPTION, pako :: PAKO | e) ArrayBuffer
 
-foreign import inflateImpl :: forall e. Uint8Array -> Eff (exception :: EXCEPTION, pako :: PAKO | e) Uint8Array
+foreign import inflateImpl :: forall e. ArrayBuffer -> Eff (exception :: EXCEPTION, pako :: PAKO | e) ArrayBuffer
 
 
 defaultOptions :: Options
@@ -132,34 +132,32 @@ defaultOptions = { level: Level6
                  }
 
 
-deflateWithOptions :: forall e. Options -> Uint8Array -> Eff (pako :: PAKO | e) (Either Error Uint8Array)
-deflateWithOptions options bytes = try $ deflateImpl (write options) bytes
+deflateWithOptions :: forall e. Options -> ArrayBuffer -> Eff (pako :: PAKO | e) (Either Error ArrayBuffer)
+deflateWithOptions options = try <<< deflateImpl (write options)
 
-deflate :: forall e. Uint8Array -> Eff (pako :: PAKO | e) (Either Error Uint8Array)
+deflate :: forall e. ArrayBuffer -> Eff (pako :: PAKO | e) (Either Error ArrayBuffer)
 deflate = deflateWithOptions defaultOptions
 
-inflate :: forall e. Uint8Array -> Eff (pako :: PAKO | e) (Either Error Uint8Array)
+inflate :: forall e. ArrayBuffer -> Eff (pako :: PAKO | e) (Either Error ArrayBuffer)
 inflate = try <<< inflateImpl
 
-byteSize :: Uint8Array -> Int
-byteSize = DV.byteLength <<< TA.dataView
+byteSize :: ArrayBuffer -> Int
+byteSize = AB.byteLength
 
-asBytes :: forall e. String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) Uint8Array
-asBytes s = do
-  ab <- AB.fromString s
-  pure $ TA.asUint8Array $ DV.whole ab
+asBytes :: forall e. String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) ArrayBuffer
+asBytes s = AB.fromString s
 
-asString :: forall e. Uint8Array ->  Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) String
+asString :: forall e. ArrayBuffer ->  Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) String
 asString b = do
-  is <- TA.toIntArray $ TA.asInt16Array $ TA.dataView b
+  is <- TA.toIntArray $ TA.asInt16Array $ DV.whole b
   let cs = fromCharCode <$> is
   pure $ fromCharArray cs
 
-deflateTextWithOptions :: forall e. Options -> String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error Uint8Array)
+deflateTextWithOptions :: forall e. Options -> String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
 deflateTextWithOptions options = deflateWithOptions options <=< asBytes
 
-deflateText :: forall e. String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error Uint8Array)
+deflateText :: forall e. String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
 deflateText = deflateTextWithOptions defaultOptions
 
-inflateText :: forall e. Uint8Array -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error String)
+inflateText :: forall e. ArrayBuffer -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error String)
 inflateText = traverse asString <=< inflate
