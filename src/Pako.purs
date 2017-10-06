@@ -9,8 +9,9 @@ import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
 import Data.ArrayBuffer.Types (Uint8Array)
 import Data.Char (fromCharCode)
-import Data.Either (Either(..))
+import Data.Either (Either)
 import Data.String (fromCharArray)
+import Data.Traversable (traverse)
 
 foreign import data PAKO :: Effect
 
@@ -43,8 +44,4 @@ deflateText :: forall e. String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BU
 deflateText = deflate <=< asBytes
 
 inflateText :: forall e. Uint8Array -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error String)
-inflateText b = do
-  d <- inflate b
-  case d of
-    Right x -> Right <$> asString x
-    Left e -> pure $ Left e
+inflateText = traverse asString <=< inflate
