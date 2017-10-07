@@ -2,7 +2,7 @@ module Pako where
 
 import Prelude
 
-import Control.Monad.Eff (Eff, kind Effect)
+import Control.Monad.Eff (Eff, runPure, kind Effect)
 import Control.Monad.Eff.Exception (EXCEPTION, Error, try)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
@@ -20,8 +20,6 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.String (fromCharArray)
 import Data.Traversable (traverse)
 import Simple.JSON (class WriteForeign, write, writeImpl)
-
-foreign import data PAKO :: Effect
 
 data Level = Level0
            | Level1
@@ -119,9 +117,9 @@ type Options = { level :: Level
                , strategy :: Strategy
                }
 
-foreign import deflateImpl :: forall e. Foreign -> ArrayBuffer -> Eff (exception :: EXCEPTION, pako :: PAKO | e) ArrayBuffer
+foreign import deflateImpl :: forall e. Foreign -> ArrayBuffer -> Eff (exception :: EXCEPTION | e) ArrayBuffer
 
-foreign import inflateImpl :: forall e. ArrayBuffer -> Eff (exception :: EXCEPTION, pako :: PAKO | e) ArrayBuffer
+foreign import inflateImpl :: forall e. ArrayBuffer -> Eff (exception :: EXCEPTION | e) ArrayBuffer
 
 
 defaultOptions :: Options
@@ -132,14 +130,14 @@ defaultOptions = { level: Level6
                  }
 
 
-deflateWithOptions :: forall e. Options -> ArrayBuffer -> Eff (pako :: PAKO | e) (Either Error ArrayBuffer)
-deflateWithOptions options = try <<< deflateImpl (write options)
+deflateWithOptions :: Options -> ArrayBuffer -> Either Error ArrayBuffer
+deflateWithOptions options = runPure <<< try <<< deflateImpl (write options)
 
-deflate :: forall e. ArrayBuffer -> Eff (pako :: PAKO | e) (Either Error ArrayBuffer)
+deflate :: ArrayBuffer -> Either Error ArrayBuffer
 deflate = deflateWithOptions defaultOptions
 
-inflate :: forall e. ArrayBuffer -> Eff (pako :: PAKO | e) (Either Error ArrayBuffer)
-inflate = try <<< inflateImpl
+inflate :: ArrayBuffer -> Either Error ArrayBuffer
+inflate = runPure <<< try <<< inflateImpl
 
 byteSize :: ArrayBuffer -> Int
 byteSize = AB.byteLength
@@ -153,11 +151,13 @@ asString b = do
   let cs = fromCharCode <$> is
   pure $ fromCharArray cs
 
-deflateTextWithOptions :: forall e. Options -> String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
-deflateTextWithOptions options = deflateWithOptions options <=< asBytes
+deflateTextWithOptions :: forall e. Options -> String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
+deflateTextWithOptions options s = do
+  bytes <- asBytes s
+  pure $ (deflateWithOptions options) bytes
 
-deflateText :: forall e. String -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
+deflateText :: forall e. String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
 deflateText = deflateTextWithOptions defaultOptions
 
-inflateText :: forall e. ArrayBuffer -> Eff (pako :: PAKO, arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error String)
-inflateText = traverse asString <=< inflate
+inflateText :: forall e. ArrayBuffer -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error String)
+inflateText = traverse asString <<< inflate

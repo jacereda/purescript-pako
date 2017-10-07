@@ -10,7 +10,7 @@ import Data.ArrayBuffer.ArrayBuffer (ARRAY_BUFFER)
 import Data.Either (Either(..))
 import Data.Enum (enumFromTo)
 import Data.Traversable (for_, traverse)
-import Pako (PAKO, Level, WindowBits, MemLevel, Strategy, asBytes, byteSize, deflateText, deflateTextWithOptions, defaultOptions, inflateText)
+import Pako (Level, WindowBits, MemLevel, Strategy, asBytes, byteSize, deflateText, deflateTextWithOptions, defaultOptions, inflateText)
 import Test.QuickCheck (QC, arbitrary, quickCheck', (<?>))
 import Test.QuickCheck.Gen (randomSample')
 
@@ -31,7 +31,7 @@ assertEffEquals expectedValue computation = do
   quickCheck' 1 $ actualValue == expectedValue <?> msg
   
 
-main :: forall e. Eff (console :: CONSOLE, random :: RANDOM, exception :: EXCEPTION, pako :: PAKO, arrayBuffer :: ARRAY_BUFFER | e) Unit
+main :: forall e. Eff (console :: CONSOLE, random :: RANDOM, exception :: EXCEPTION, arrayBuffer :: ARRAY_BUFFER | e) Unit
 main = do
   for_ (enumFromTo bottom top :: Array Level) \level ->
     for_ (enumFromTo bottom top :: Array WindowBits) \windowBits ->
@@ -48,7 +48,7 @@ main = do
       invalid <- asBytes x
       res <- inflateText invalid
       pure $ Res res
-  where chk :: forall e2. Level -> WindowBits -> MemLevel -> Strategy -> String -> Eff (pako :: PAKO, arrayBuffer :: ARRAY_BUFFER, console :: CONSOLE | e2) Unit
+  where chk :: forall e2. Level -> WindowBits -> MemLevel -> Strategy -> String -> Eff (arrayBuffer :: ARRAY_BUFFER, console :: CONSOLE | e2) Unit
         chk level windowBits memLevel strategy x = do
           def <- deflateTextWithOptions (defaultOptions { level = level
                                                         , windowBits = windowBits
