@@ -8,6 +8,7 @@ import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
 import Data.ArrayBuffer.Types (ArrayBuffer)
+import Data.Bifunctor (rmap)
 import Data.Char (fromCharCode)
 import Data.Either (Either)
 import Data.Enum (class Enum)
@@ -18,7 +19,6 @@ import Data.Generic.Rep.Enum (genericFromEnum, genericPred, genericSucc)
 import Data.Generic.Rep.Ord (genericCompare)
 import Data.Generic.Rep.Show (genericShow)
 import Data.String (fromCharArray)
-import Data.Traversable (traverse)
 import Simple.JSON (class WriteForeign, write, writeImpl)
 
 data Level = Level0
@@ -142,22 +142,20 @@ inflate = runPure <<< try <<< inflateImpl
 byteSize :: ArrayBuffer -> Int
 byteSize = AB.byteLength
 
-asBytes :: forall e. String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) ArrayBuffer
-asBytes s = AB.fromString s
+asBytes :: String -> ArrayBuffer
+asBytes = AB.fromString
 
-asString :: forall e. ArrayBuffer ->  Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) String
+asString :: ArrayBuffer -> String
 asString b = do
-  is <- TA.toIntArray $ TA.asInt16Array $ DV.whole b
-  let cs = fromCharCode <$> is
-  pure $ fromCharArray cs
+  let is = TA.toIntArray $ TA.asInt16Array $ DV.whole b
+      cs = fromCharCode <$> is
+  fromCharArray cs
 
-deflateTextWithOptions :: forall e. Options -> String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
-deflateTextWithOptions options s = do
-  bytes <- asBytes s
-  pure $ (deflateWithOptions options) bytes
+deflateTextWithOptions :: Options -> String -> Either Error ArrayBuffer
+deflateTextWithOptions options = deflateWithOptions options <<< asBytes
 
-deflateText :: forall e. String -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error ArrayBuffer)
+deflateText :: String -> Either Error ArrayBuffer
 deflateText = deflateTextWithOptions defaultOptions
 
-inflateText :: forall e. ArrayBuffer -> Eff (arrayBuffer :: AB.ARRAY_BUFFER | e) (Either Error String)
-inflateText = traverse asString <<< inflate
+inflateText :: ArrayBuffer -> Either Error String
+inflateText = rmap asString <<< inflate

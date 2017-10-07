@@ -9,7 +9,7 @@ import Control.Monad.Eff.Random (RANDOM)
 import Data.ArrayBuffer.ArrayBuffer (ARRAY_BUFFER)
 import Data.Either (Either(..))
 import Data.Enum (enumFromTo)
-import Data.Traversable (for_, traverse)
+import Data.Traversable (for_)
 import Pako (Level, WindowBits, MemLevel, Strategy, asBytes, byteSize, deflateText, deflateTextWithOptions, defaultOptions, inflateText)
 import Test.QuickCheck (QC, arbitrary, quickCheck', (<?>))
 import Test.QuickCheck.Gen (randomSample')
@@ -23,6 +23,10 @@ instance eqRes :: Eq a => Eq (Res a) where
   eq (Res (Left a)) (Res (Left b)) = true -- (eq `on` message) a b
   eq _ _ = false
 
+assertEquals :: forall a e. Eq a => Show a => a -> a -> QC e Unit
+assertEquals expected actual = quickCheck' 1 $ actual == expected <?> msg
+  where msg = show expected <> " /= " <> show actual
+  
 
 assertEffEquals :: forall a e. Eq a => Show a => a -> QC e a -> QC e Unit
 assertEffEquals expectedValue computation = do
@@ -40,21 +44,15 @@ main = do
           chk level windowBits memLevel strategy json
   xs <- randomSample' 100 arbitrary
   for_ xs \x -> do
-    assertEffEquals (Res (Right x)) do
-      c <- deflateText x
-      d <- traverse inflateText c
-      pure $ Res $ join d
-    assertEffEquals (Res (Left (error "incorrect header check"))) do
-      invalid <- asBytes x
-      res <- inflateText invalid
-      pure $ Res res
+    assertEquals (Res (Right x)) $ Res $ join $ inflateText <$> deflateText x
+    assertEquals (Res (Left (error "incorrect header check"))) $ Res $ inflateText $ asBytes x
   where chk :: forall e2. Level -> WindowBits -> MemLevel -> Strategy -> String -> Eff (arrayBuffer :: ARRAY_BUFFER, console :: CONSOLE | e2) Unit
         chk level windowBits memLevel strategy x = do
-          def <- deflateTextWithOptions (defaultOptions { level = level
-                                                        , windowBits = windowBits
-                                                        , memLevel = memLevel
-                                                        , strategy = strategy
-                                                        }) x
+          let def = deflateTextWithOptions (defaultOptions { level = level
+                                                           , windowBits = windowBits
+                                                           , memLevel = memLevel
+                                                           , strategy = strategy
+                                                           }) x
           log $ show level <> " "
             <> show windowBits <> " "
             <> show memLevel <> " "            
