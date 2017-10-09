@@ -146,10 +146,7 @@ asBytes :: String -> ArrayBuffer
 asBytes = AB.fromString
 
 asString :: ArrayBuffer -> String
-asString b = do
-  let is = TA.toIntArray $ TA.asInt16Array $ DV.whole b
-      cs = fromCharCode <$> is
-  fromCharArray cs
+asString = fromCharArray <<< map fromCharCode <<< TA.toIntArray <<< TA.asInt16Array <<< DV.whole
 
 deflateTextWithOptions :: Options -> String -> Either Error ArrayBuffer
 deflateTextWithOptions options = deflateWithOptions options <<< asBytes
