@@ -11,16 +11,15 @@
     "bower_components",
     "output"
   ],
-  "dependencies": {
-    "purescript-prelude": "^3.1.0",
-    "purescript-arraybuffer": "^6.0.0",
-    "purescript-strings": "^3.3.1",
-    "purescript-simple-json": "^1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "purescript-console": "^3.0.0",
-    "purescript-exceptions": "^3.1.0",
-    "purescript-quickcheck": "^4.6.0",
-    "purescript-debug": "^3.0.0"
+    "purescript-prelude": "^4.0.1",
+    "purescript-arraybuffer": "^7.0.0",
+    "purescript-strings": "^4.0.0",
+    "purescript-simple-json": "^4.0.0",
+    "purescript-console": "^4.1.0",
+    "purescript-exceptions": "^4.0.0",
+    "purescript-quickcheck": "^5.0.0",
+    "purescript-debug": "^4.0.0"
   }
 }

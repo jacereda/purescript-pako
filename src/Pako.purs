@@ -2,8 +2,6 @@ module Pako where
 
 import Prelude
 
-import Control.Monad.Eff (Eff, runPure, kind Effect)
-import Control.Monad.Eff.Exception (EXCEPTION, Error, try)
 import Data.ArrayBuffer.ArrayBuffer as AB
 import Data.ArrayBuffer.DataView as DV
 import Data.ArrayBuffer.Typed as TA
@@ -12,13 +10,17 @@ import Data.Bifunctor (rmap)
 import Data.Char (fromCharCode)
 import Data.Either (Either)
 import Data.Enum (class Enum)
-import Data.Foreign (Foreign)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Bounded (genericBottom, genericTop)
 import Data.Generic.Rep.Enum (genericFromEnum, genericPred, genericSucc)
 import Data.Generic.Rep.Ord (genericCompare)
 import Data.Generic.Rep.Show (genericShow)
-import Data.String (fromCharArray)
+import Data.Maybe (fromMaybe)
+import Data.String.CodeUnits (fromCharArray)
+import Effect (Effect)
+import Effect.Exception (Error, try)
+import Effect.Unsafe (unsafePerformEffect)
+import Foreign (Foreign)
 import Simple.JSON (class WriteForeign, write, writeImpl)
 
 data Level = Level0
@@ -39,7 +41,7 @@ instance ordLevel :: Ord Level where compare = genericCompare
 instance boundedLevel :: Bounded Level where
   top = genericTop
   bottom = genericBottom
-instance enumLevel :: Enum Level where 
+instance enumLevel :: Enum Level where
   pred = genericPred
   succ = genericSucc
 instance writeForeignlevel :: WriteForeign Level where
@@ -61,7 +63,7 @@ instance ordWindowBits :: Ord WindowBits where compare = genericCompare
 instance boundedWindowBits :: Bounded WindowBits where
   top = genericTop
   bottom = genericBottom
-instance enumWindowBits :: Enum WindowBits where 
+instance enumWindowBits :: Enum WindowBits where
   pred = genericPred
   succ = genericSucc
 instance writeForeignWindowBits :: WriteForeign WindowBits where
@@ -84,7 +86,7 @@ instance ordMemLevel :: Ord MemLevel where compare = genericCompare
 instance boundedMemLevel :: Bounded MemLevel where
   top = genericTop
   bottom = genericBottom
-instance enumMemLevel :: Enum MemLevel where 
+instance enumMemLevel :: Enum MemLevel where
   pred = genericPred
   succ = genericSucc
 instance writeForeignMemLevel :: WriteForeign MemLevel where
@@ -104,7 +106,7 @@ instance ordStrategy :: Ord Strategy where compare = genericCompare
 instance boundedStrategy :: Bounded Strategy where
   top = genericTop
   bottom = genericBottom
-instance enumStrategy :: Enum Strategy where 
+instance enumStrategy :: Enum Strategy where
   pred = genericPred
   succ = genericSucc
 instance writeForeignStrategy :: WriteForeign Strategy where
@@ -117,10 +119,9 @@ type Options = { level :: Level
                , strategy :: Strategy
                }
 
-foreign import deflateImpl :: forall e. Foreign -> ArrayBuffer -> Eff (exception :: EXCEPTION | e) ArrayBuffer
+foreign import deflateImpl :: Foreign -> ArrayBuffer -> Effect ArrayBuffer
 
-foreign import inflateImpl :: forall e. ArrayBuffer -> Eff (exception :: EXCEPTION | e) ArrayBuffer
-
+foreign import inflateImpl :: ArrayBuffer -> Effect ArrayBuffer
 
 defaultOptions :: Options
 defaultOptions = { level: Level6
@@ -131,13 +132,13 @@ defaultOptions = { level: Level6
 
 
 deflateWithOptions :: Options -> ArrayBuffer -> Either Error ArrayBuffer
-deflateWithOptions options = runPure <<< try <<< deflateImpl (write options)
+deflateWithOptions options = unsafePerformEffect <<< try <<< deflateImpl (write options)
 
 deflate :: ArrayBuffer -> Either Error ArrayBuffer
 deflate = deflateWithOptions defaultOptions
 
 inflate :: ArrayBuffer -> Either Error ArrayBuffer
-inflate = runPure <<< try <<< inflateImpl
+inflate = unsafePerformEffect <<< try <<< inflateImpl
 
 byteSize :: ArrayBuffer -> Int
 byteSize = AB.byteLength
@@ -146,7 +147,7 @@ asBytes :: String -> ArrayBuffer
 asBytes = AB.fromString
 
 asString :: ArrayBuffer -> String
-asString = fromCharArray <<< map fromCharCode <<< TA.toIntArray <<< TA.asInt16Array <<< DV.whole
+asString = fromCharArray <<< map (fromMaybe '?' <<< fromCharCode) <<< TA.toIntArray <<< TA.asInt16Array <<< DV.whole
 
 deflateTextWithOptions :: Options -> String -> Either Error ArrayBuffer
 deflateTextWithOptions options = deflateWithOptions options <<< asBytes
