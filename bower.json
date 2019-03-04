@@ -11,14 +11,15 @@
     "bower_components",
     "output"
   ],
-  "dependencies": {},
-  "devDependencies": {
+  "dependencies": {
     "purescript-prelude": "^4.0.1",
     "purescript-arraybuffer": "^7.0.0",
     "purescript-strings": "^4.0.0",
     "purescript-simple-json": "^4.0.0",
     "purescript-console": "^4.1.0",
-    "purescript-exceptions": "^4.0.0",
+    "purescript-exceptions": "^4.0.0"
+  },
+  "devDependencies": {
     "purescript-quickcheck": "^5.0.0",
     "purescript-debug": "^4.0.0"
   }
