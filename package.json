@@ -4,6 +4,6 @@
     "browsertest": "pulp --then 'open dist/index.html' browserify -O -I test --main Test.Main --to dist/app.js"
   },
   "dependencies": {
-    "pako": "^1.0.6"
+    "pako": "^1.0.11"
   }
 }

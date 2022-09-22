@@ -8,7 +8,7 @@ import Effect.Exception (Error, error)
 import Data.Either (Either(..))
 import Data.Enum (enumFromTo)
 import Data.Traversable (for_)
-import Pako (Level, WindowBits, MemLevel, Strategy, asBytes, byteSize, deflateText, deflateTextWithOptions, defaultOptions, inflateText)
+import Pako (Level, WindowBits, MemLevel, Strategy, fromString, byteSize, deflateText, deflateTextWithOptions, defaultOptions, inflateText)
 import Test.QuickCheck (arbitrary, quickCheck', (<?>))
 import Test.QuickCheck.Gen (randomSample')
 
@@ -43,7 +43,7 @@ main = do
   xs <- randomSample' 100 arbitrary
   for_ xs \x -> do
     assertEquals (Res (Right x)) $ Res $ join $ inflateText <$> deflateText x
-    assertEquals (Res (Left (error "incorrect header check"))) $ Res $ inflateText $ asBytes x
+    assertEquals (Res (Left (error "incorrect header check"))) $ Res $ inflateText $ fromString x
   where chk :: Level -> WindowBits -> MemLevel -> Strategy -> String -> Effect Unit
         chk level windowBits memLevel strategy x = do
           let def = deflateTextWithOptions (defaultOptions { level = level
