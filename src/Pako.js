@@ -7,14 +7,11 @@ export const deflateImpl = options => bytes => () => pako.deflate(bytes, options
 
 export const inflateImpl = bytes => () => pako.inflate(bytes).buffer;
 
-// from https://developer.chrome.com/blog/how-to-convert-arraybuffer-to-and-from-string/
-export const toString = buf => String.fromCharCode.apply(null, new Uint16Array(buf));
+const ENCODING = "utf-8" 
 
-export const fromString = str => {
-    var buf = new ArrayBuffer(str.length*2); // 2 bytes for each char
-    var bufView = new Uint16Array(buf);
-    for (var i=0, strLen=str.length; i < strLen; i++) {
-        bufView[i] = str.charCodeAt(i);
-    }
-    return buf;
-};
+export const toString = arrayBuffer => new TextDecoder(ENCODING).decode(new Uint8Array(arrayBuffer));
+
+export function fromString(str) {
+    let u8arr = new TextEncoder(ENCODING).encode(str);
+    return u8arr.buffer.slice(u8arr.byteOffset, u8arr.byteLength + u8arr.byteOffset)
+}
