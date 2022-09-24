@@ -1,8 +1,6 @@
 "use strict";
 import pako from 'pako';
 
-export const hello = () => console.log("hello");
-
 export const deflateImpl = options => bytes => () => pako.deflate(bytes, options).buffer;
 
 export const inflateImpl = bytes => () => pako.inflate(bytes).buffer;
