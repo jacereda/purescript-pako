@@ -11,10 +11,10 @@ import Data.Char (fromCharCode)
 import Data.Either (Either)
 import Data.Enum (class Enum)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Bounded (genericBottom, genericTop)
-import Data.Generic.Rep.Enum (genericFromEnum, genericPred, genericSucc)
-import Data.Generic.Rep.Ord (genericCompare)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Bounded.Generic (genericBottom, genericTop)
+import Data.Enum.Generic (genericFromEnum, genericPred, genericSucc)
+import Data.Ord.Generic (genericCompare)
+import Data.Show.Generic (genericShow)
 import Data.Maybe (fromMaybe)
 import Data.String.CodeUnits (fromCharArray)
 import Effect (Effect)
@@ -123,6 +123,9 @@ foreign import deflateImpl :: Foreign -> ArrayBuffer -> Effect ArrayBuffer
 
 foreign import inflateImpl :: ArrayBuffer -> Effect ArrayBuffer
 
+foreign import fromString :: String -> ArrayBuffer
+foreign import toString :: ArrayBuffer -> String
+
 defaultOptions :: Options
 defaultOptions = { level: Level6
                  , windowBits: WindowBits15
@@ -143,17 +146,12 @@ inflate = unsafePerformEffect <<< try <<< inflateImpl
 byteSize :: ArrayBuffer -> Int
 byteSize = AB.byteLength
 
-asBytes :: String -> ArrayBuffer
-asBytes = AB.fromString
-
-asString :: ArrayBuffer -> String
-asString = fromCharArray <<< map (fromMaybe '?' <<< fromCharCode) <<< TA.toIntArray <<< TA.asInt16Array <<< DV.whole
 
 deflateTextWithOptions :: Options -> String -> Either Error ArrayBuffer
-deflateTextWithOptions options = deflateWithOptions options <<< asBytes
+deflateTextWithOptions options = deflateWithOptions options <<< fromString
 
 deflateText :: String -> Either Error ArrayBuffer
 deflateText = deflateTextWithOptions defaultOptions
 
 inflateText :: ArrayBuffer -> Either Error String
-inflateText = rmap asString <<< inflate
+inflateText = rmap toString <<< inflate
